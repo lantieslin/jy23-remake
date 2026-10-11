@@ -220,23 +220,37 @@ class Sol:
         print('OK %s=%s  備份:%s' % (key, show, bak))
         print('進遊戲讀檔驗收。若壞檔,用備份蓋回來即可。')
 
+    def set_named(self, key, text):
+        """name_1/name_2：只換 markup 第一段明文，markup 保留(字體才不會掉)。"""
+        e = self.entries[key]
+        full = bytes(self.raw[e['vpos'] + 2:e['vpos'] + e['vlen']]).decode('utf-8', 'replace')
+        run = None
+        for mm in re.finditer(r'>([^<>]*)</FONT>', full):
+            if mm.group(1).strip():
+                run = mm.group(1)
+                break
+        new_full = full.replace('>' + run + '</FONT>', '>' + text + '</FONT>', 1) if run is not None else text
+        nb = new_full.encode('utf-8')
+        self.raw[e['vpos']:e['vpos'] + e['vlen']] = struct.pack('>H', len(nb)) + nb
+        self.parse()
+
     def cmd_setname(self, xing, ming):
         for k in ('name_1', 'name_2', 'name'):
             if k not in self.entries:
                 sys.exit('缺鍵 %s,先用 list 確認' % k)
         bak = self.backup()
-        ox = self.entries['name_1']['val']
-        om = self.entries['name_2']['val']
-        self.set_string('name_1', xing)
-        self.set_string('name_2', ming)
-        full_old = (ox + om).encode('utf-8')
-        full_new = (xing + ming).encode('utf-8')
-        nm = self.entries['name']['val'].encode('utf-8', 'replace')
-        if full_old in nm:
-            nm = nm.replace(full_old, full_new)
-            newv = struct.pack('>H', len(nm)) + nm
-            e = self.entries['name']
-            self.raw[e['vpos']:e['vpos'] + e['vlen']] = newv
+        self.set_named('name_1', xing)
+        self.set_named('name_2', ming)
+        e = self.entries['name']
+        full = bytes(self.raw[e['vpos'] + 2:e['vpos'] + e['vlen']]).decode('utf-8', 'replace')
+        runs = [mm for mm in re.finditer(r'>([^<>]*)</FONT>', full) if mm.group(1).strip()]
+        new_full = full
+        for mm, t in zip(runs, (xing, ming)):
+            new_full = new_full.replace('>' + mm.group(1) + '</FONT>', '>' + t + '</FONT>', 1)
+        if new_full != full:
+            nb = new_full.encode('utf-8')
+            self.raw[e['vpos']:e['vpos'] + e['vlen']] = struct.pack('>H', len(nb)) + nb
+            self.parse()
         self.save()
         print('OK 姓=%s 名=%s  備份:%s' % (xing, ming, bak))
         print('進遊戲讀檔驗收。')

@@ -196,6 +196,19 @@ class App:
                 nb = new_full.encode('utf-8')
                 s.raw[en['vpos']:en['vpos'] + en['vlen']] = struct.pack('>H', len(nb)) + nb
                 s.parse()  # 變長後重建偏移
+            # 遊戲顯示用的是 name（兩段內文各放姓/名），逐段同步
+            if 'name' in s.entries and s.entries['name']['type'] == 0x02:
+                en = s.entries['name']
+                full = bytes(s.raw[en['vpos'] + 2:en['vpos'] + en['vlen']]).decode('utf-8', 'replace')
+                runs = [mm for mm in re.finditer(r'>([^<>]*)</FONT>', full) if mm.group(1).strip()]
+                targets = [self.vars['name_1'].get(), self.vars['name_2'].get()]
+                new_full = full
+                for mm, t in zip(runs, targets):
+                    new_full = new_full.replace('>' + mm.group(1) + '</FONT>', '>' + t + '</FONT>', 1)
+                if new_full != full:
+                    nb = new_full.encode('utf-8')
+                    s.raw[en['vpos']:en['vpos'] + en['vlen']] = struct.pack('>H', len(nb)) + nb
+                    s.parse()
             s.save()
             self.done('基本已寫入', bak)
         except Exception as e:
