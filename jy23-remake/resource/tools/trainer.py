@@ -40,9 +40,26 @@ def find_sols():
     return glob.glob(DEF_BASE + '\\localhost\\*\\*\\*\\*', recursive=True)
 
 
+def jy2_ns_dir():
+    """跟 Ruffle 同算法算出 jy2.swf 的命名空間目錄：
+    去掉碟符，逐段 URL 編碼（ASCII 原樣，非 ASCII 轉 UTF-8 百分比編碼）。"""
+    import urllib.parse
+    from amf import pkg_root
+    swf = os.path.abspath(os.path.join(pkg_root(), 'resource', 'assets', 'jy2', 'jy2.swf'))
+    parts = swf.replace('\\', '/').split('/')
+    if parts and parts[0].endswith(':'):
+        parts = parts[1:]
+    safe = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~'
+    enc = [urllib.parse.quote(p, safe=safe) for p in parts[:-1]]
+    return os.path.join(pkg_save(), 'localhost', *enc, parts[-1])
+
+
 def find_slot(slot):
-    """只讀包內固定存檔位；同槽多檔取最新。"""
+    """先走確定性路徑（跟 Ruffle 一致）；找不到才回退掃描。"""
     want = ROOTS[slot].decode() + '.sol'
+    det = os.path.join(jy2_ns_dir(), want)
+    if os.path.isfile(det):
+        return det
     base = pkg_save()
     cands = []
     if os.path.isdir(base):
@@ -50,7 +67,7 @@ def find_slot(slot):
             if want in fn:
                 cands.append(os.path.join(dp, want))
     if not cands:
-        raise FileNotFoundError('slot%s 在包內存檔位無存檔' % slot)
+        raise FileNotFoundError('slot%s 無存檔（先進遊戲存檔）：%s' % (slot, det))
     cands.sort(key=os.path.getmtime, reverse=True)
     return cands[0]
 

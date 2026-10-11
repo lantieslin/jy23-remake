@@ -161,7 +161,7 @@ class App:
             self.aaa.set(bool(e['aaa']['val']))
         if 'rrr' in e:
             self.rrr.set(str(int(e['rrr']['val'])))
-        self.status.set('已讀取 %s' % os.path.basename(s.path))
+        self.status.set('已讀取 …%s' % os.path.join(*s.path.split(os.path.sep)[-4:]))
 
     def done(self, msg, bak=None):
         self.status.set(msg + ((' 備份:%s' % bak) if bak else ''))
