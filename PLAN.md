@@ -3,6 +3,7 @@
 > 起始決議（Q1–Q14）：包裝路線 / 雙 exe + 共用 save / Ruffle 主 + Projector 逃生 /
 > 行為一致即還原 / 存檔格式調查後凍結 / 先出 PLAN.md。
 > 下方為實測後更新，與初版不同處以此版為準。
+> 遠端：https://github.com/lantieslin/jy23-remake（main；含包＋PLAN，不含存檔進度）。
 
 ## 1. 背景與目標（不變）
 

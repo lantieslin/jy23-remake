@@ -172,6 +172,8 @@ class App:
             s = self.sol()
             import time
             import shutil
+            import struct
+            import re
             bak = '%s.bak.%d' % (s.path, int(time.time()))
             shutil.copyfile(s.path, bak)
             for k in ('name_1', 'name_2', 'jjj', 'Menpai', 'Chenhao'):
@@ -180,9 +182,20 @@ class App:
                 en = s.entries[k]
                 if en['type'] != 0x02:
                     continue
-                old = bytes(s.raw[en['vpos'] + 2:en['vpos'] + en['vlen']])
-                new = set_inner(old, self.vars[k].get())
-                s.raw[en['vpos'] + 2:en['vpos'] + en['vlen']] = new
+                text = self.vars[k].get()
+                if k in ('name_1', 'name_2'):
+                    full = bytes(s.raw[en['vpos'] + 2:en['vpos'] + en['vlen']]).decode('utf-8', 'replace')
+                    run = None
+                    for mm in re.finditer(r'>([^<>]*)</FONT>', full):
+                        if mm.group(1).strip():
+                            run = mm.group(1)
+                            break
+                    new_full = full.replace(run, text, 1) if run is not None else text
+                else:
+                    new_full = text
+                nb = new_full.encode('utf-8')
+                s.raw[en['vpos']:en['vpos'] + en['vlen']] = struct.pack('>H', len(nb)) + nb
+                s.parse()  # 變長後重建偏移
             s.save()
             self.done('基本已寫入', bak)
         except Exception as e:
