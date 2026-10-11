@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.bak.*
+jy23-remake/save/*
+!jy23-remake/save/.gitkeep
